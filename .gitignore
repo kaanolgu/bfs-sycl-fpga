@@ -1,0 +1,7 @@
+aocl/
+slurm-logs/
+1
+*.sh
+bfs_*/build*
+dataset/
+txt/
