@@ -1,4 +1,7 @@
-//---------------------------------------------------------- CPU COMPUTATION
+//----------------------------------------------------------
+//--bfs on cpu
+//--programmer:  jianbin
+//----------------------------------------------------------//---------------------------------------------------------- CPU COMPUTATION
 void run_bfs_cpu(int no_of_nodes,
   std::vector<unsigned int> &h_graph_nodes_start,
   std::vector<unsigned int> &h_graph_nodes_end, 
