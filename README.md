@@ -27,4 +27,4 @@ aocl profile -output-dir /path/to/bfs_*cu/aocl/ ./build/bfs.fpga (GraphName)  (P
 ```
 
 ## Optimisations
-[Optimisations Wiki Page](wiki/Optimisation-Guide)
+[Optimisations Wiki Page](https://github.com/kaanolgu/bfs-sycl-fpga/wiki/Optimisation-Guide)
