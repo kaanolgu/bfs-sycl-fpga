@@ -1,6 +1,22 @@
 # bfs-sycl-fpga
 The Breadth-First Search algorithm implementation using Intel oneAPI (SYCL2020) on Intel Arria10 and Stratix10 FPGAs
 
+## Producing and Converting Datasets
+Tested with Python 3.9.6
+```bash
+python -m venv venv-graphgen
+. venv-graphgen/bin/activate
+pip install -U pip
+pip install numpy networkit pandas
+pip install cython;
+cd scripts
+python genGraph.py rmat 24 16
+```
+If you have datasets ready as text file, convert graph text files to the bin files : 
+```bash
+python generator.py (dataset name) (partition)
+python generator.py wiki-Talk 1
+```
 
 ## Build for Hardware Execution
 ```bash
