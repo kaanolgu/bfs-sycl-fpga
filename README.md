@@ -1,4 +1,6 @@
 # bfs-sycl-fpga
+This work has been submitted to Ninth International Workshop on Heterogeneous High-performance Reconfigurable Computing (H2RC'23) 
+
 The Breadth-First Search algorithm implementation using Intel oneAPI (SYCL2020) on Intel Arria10 and Stratix10 FPGAs
 
 ## Producing and Converting Datasets
