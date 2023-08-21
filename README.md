@@ -50,7 +50,7 @@ aocl profile -output-dir /path/to/bfs_*cu/aocl/ ./build/bfs.fpga (GraphName)  (P
 ## Acknowledgements
 * [University of Paderborn Noctua 2](https://pc2.uni-paderborn.de/hpc-services/available-systems/noctua2)
 * [Intel DevCloud for OneAPI](https://devcloud.intel.com/oneapi/)
-* [[/docs/images/bristol-alumni-and-friends.jpg]]
+* [[/docs/images/bristol-alumni-and-friends.png]]
 ## License
 This work is licensed under a
 [Creative Commons Attribution 4.0 International License][cc-by].
