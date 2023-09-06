@@ -162,6 +162,8 @@ std::vector<unsigned int> h_graph_nodes_start;
 
 const int numcu = hardwarePECount;
     std::vector<MyUint1> h_updating_graph_mask(numCols,0);
+    // make this a different datatype and cast it to the kernel
+    // hpm version of the stratix 10 try 
   std::vector<MyUint1> h_graph_visited(numCols,0); 
 h_graph_visited[start_vertex]=1; 
 

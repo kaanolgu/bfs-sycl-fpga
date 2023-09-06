@@ -10,13 +10,14 @@ using namespace sycl;
 #include <sycl/ext/intel/fpga_extensions.hpp>
 #include <sycl/sycl.hpp>
 
-
+constexpr int BUFFER_SIZE = 4;
 // Aliases for LSU Control Extension types
 // Implemented using template arguments such as prefetch & burst_coalesce
 // on the new ext::intel::lsu class to specify LSU style and modifiers
 using PrefetchingLSU = ext::intel::lsu<ext::intel::prefetch<true>,ext::intel::statically_coalesce<false>>;
 using PipelinedLSU = ext::intel::lsu<>;
 using BurstCoalescedLSU = ext::intel::lsu<ext::intel::burst_coalesce<true>,ext::intel::statically_coalesce<false>>;
+using CacheLSU = ext::intel::lsu<ext::intel::burst_coalesce<true>, ext::intel::cache<1024*1024>,ext::intel::statically_coalesce<false>>;
 
 
 // Forward declare the kernel name in the global scope.
@@ -69,8 +70,8 @@ event parallel_explorer_kernel(queue &q,
 
           // Process the edges of the current nodes
           for (int j = nodes_start; j < nodes_end; j++) {
-            int id = BurstCoalescedLSU::load(DevicePtr_edges + j);
-            MyUint1 visited_condition = BurstCoalescedLSU::load(DevicePtr_visited + id);
+            int id = CacheLSU::load(DevicePtr_edges + j);
+            MyUint1 visited_condition = CacheLSU::load(DevicePtr_visited + id);
             if (!visited_condition) {
                 usm_updating_mask[id]=1;
 
@@ -128,15 +129,40 @@ event parallel_pipegen_kernel(queue &q,
 
         auto e =q.single_task<class PipeGenerator>(  [=]() [[intel::kernel_args_restrict]] {
           int iter = 0;
+          [[intel::fpga_register]] int temp[BUFFER_SIZE * 2]; 
+          int temp_pos = 0;
           [[intel::initiation_interval(1)]]
-          for(int tid =0; tid < no_of_nodes; tid++){
-            unsigned int condition = usm_updating_mask[tid];
-            if(condition){
-              usm_pipe[iter] = tid;
-              iter++;
+          for(int tid =0; tid < no_of_nodes; tid+=BUFFER_SIZE){
+            #pragma unroll
+            for(int j = 0; j < BUFFER_SIZE; j++){
+              unsigned int condition = usm_updating_mask[tid + j];
+              if(condition && ((tid+j) < no_of_nodes) ){
+                temp[temp_pos] = tid + j;
+                temp_pos++;
+               
+              }
+            } 
+            if(temp_pos >= BUFFER_SIZE){
+              #pragma unroll
+              for(int j = 0; j < BUFFER_SIZE; j++){
+                usm_pipe[iter+j] = temp[j];
+              }
+              iter += BUFFER_SIZE;
+              #pragma unroll
+              for(int j = 0; j < BUFFER_SIZE; j++){
+                temp[j] = temp[j + BUFFER_SIZE];
+              }
+              temp_pos-=BUFFER_SIZE;
             }
+            // check if the buffer is filled 
+            // write buffer back to usm_pipe
           }
-          d_over[0] = iter;
+          // dump remaining inside the buffer to the output usm_pipe.
+          for(int rest = 0; rest < temp_pos; rest++){
+            usm_pipe[iter+rest] = temp[rest];
+          }
+
+          d_over[0] = iter + temp_pos;
 
         });
 
@@ -249,7 +275,7 @@ void run_bfs_fpga(int numCols,
     int global_level = 1;
 
     
-    for(int ijk=0; ijk < 15; ijk++){
+    for(int ijk=0; ijk < 25; ijk++){
       // std::cout << h_over << " -- \n";
      if(h_over == 0){
       std::cout << "total number of iterations" << ijk << "\n";
