@@ -4,8 +4,7 @@
 //----------------------------------------------------------
 //---------------------------------------------------------- CPU COMPUTATION
 void run_bfs_cpu(int no_of_nodes,
-  std::vector<unsigned int> &h_graph_nodes_start,
-  std::vector<unsigned int> &h_graph_nodes_end, 
+  std::vector<unsigned int> &source_indptr,
   std::vector<unsigned int>&source_inds, 
   std::vector<unsigned int>&h_graph_mask,
   std::vector<unsigned int>&h_updating_graph_mask, 
@@ -19,7 +18,7 @@ void run_bfs_cpu(int no_of_nodes,
     {
       if (h_graph_mask[tid] == 1){ 
         h_graph_mask[tid]=0;
-        for(int i=h_graph_nodes_start[tid]; i<(h_graph_nodes_end[tid]); i++){
+        for(int i=source_indptr[tid]; i<(source_indptr[tid+1]); i++){
           // int id = source_inds[i+9140365];  //--h_graph_edges is source_inds
           int id = source_inds[i];  // Single Processing Element--h_graph_edges is source_inds
           if(!fpga_visited[id]){  //--cambine: if node id has not been visited, enter the body below

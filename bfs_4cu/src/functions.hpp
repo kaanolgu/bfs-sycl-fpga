@@ -1,10 +1,36 @@
 #define MAX_NUM_CU 4
 // using MyUint1 = ac_int<1, false>;
-using MyUint1 = char; 
-using MyUint4 = ac_int<4, false>;
+
 using MyUInt32 = ac_int<32, false>;
 using MyUInt64 = ac_int<64, false>;
 int numRows,numCols,numNonz;
+
+constexpr int log2(int num) {
+    int result = 0;
+    int running = num;
+
+    while (running > 1) {
+        result++;
+        running /= 2;
+    }
+
+    int comp = 1;
+
+    for (int i = 0; i < result; i++) {
+        comp *= 2;
+    }
+
+    if (num != comp) {
+        result++;
+    }
+    
+    return result;
+}
+
+constexpr int BUFFER_SIZE = 16;
+using MyUint1 = char; 
+using d_type3 = ac_int<log2(BUFFER_SIZE*2), false>;
+
 
 #define DEBUG(x) std::cout <<" : "<< x << std::endl;
 //Structure to hold a node information

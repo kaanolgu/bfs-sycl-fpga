@@ -10,7 +10,7 @@ using namespace sycl;
 #include <sycl/ext/intel/fpga_extensions.hpp>
 #include <sycl/sycl.hpp>
 
-constexpr int BUFFER_SIZE = 4;
+
 // Aliases for LSU Control Extension types
 // Implemented using template arguments such as prefetch & burst_coalesce
 // on the new ext::intel::lsu class to specify LSU style and modifiers
@@ -90,8 +90,6 @@ event parallel_levelgen_kernel(queue &q,
                                 int no_of_nodes_start,
                                 int no_of_nodes_end,
                                 int *usm_dist,
-                                unsigned int *usm_pipe,
-                                unsigned int *d_over,
                                 MyUint1 *usm_updating_mask,
                                 MyUint1 *usm_visited,
                                 int global_level
@@ -120,9 +118,7 @@ event parallel_pipegen_kernel(queue &q,
                                 int no_of_nodes,
                                 unsigned int *usm_pipe,
                                 unsigned int *d_over,
-                                MyUint1 *usm_updating_mask,
-                                MyUint1 *usm_visited,
-                                int global_level
+                                MyUint1 *usm_updating_mask
                                  ){
                                   
 
@@ -130,18 +126,28 @@ event parallel_pipegen_kernel(queue &q,
         auto e =q.single_task<class PipeGenerator>(  [=]() [[intel::kernel_args_restrict]] {
           int iter = 0;
           [[intel::fpga_register]] int temp[BUFFER_SIZE * 2]; 
-          int temp_pos = 0;
+          d_type3 temp_pos = 0;
           [[intel::initiation_interval(1)]]
           for(int tid =0; tid < no_of_nodes; tid+=BUFFER_SIZE){
+            char condition[BUFFER_SIZE];
+            d_type3 increment = 0;
             #pragma unroll
             for(int j = 0; j < BUFFER_SIZE; j++){
-              unsigned int condition = usm_updating_mask[tid + j];
-              if(condition && ((tid+j) < no_of_nodes) ){
-                temp[temp_pos] = tid + j;
-                temp_pos++;
+              condition[j] = usm_updating_mask[tid + j];
+              if(condition[j] && ((tid+j) < no_of_nodes) ){
+                increment++;
+              }
+            } 
+            d_type3 current =0;
+            #pragma unroll
+            for(int j = 0; j < BUFFER_SIZE; j++){
+              if(condition[j] && ((tid+j) < no_of_nodes) ){
+                temp[temp_pos+current] = tid + j;
+                current++;
                
               }
             } 
+            temp_pos += increment;
             if(temp_pos >= BUFFER_SIZE){
               #pragma unroll
               for(int j = 0; j < BUFFER_SIZE; j++){
@@ -213,7 +219,7 @@ void run_bfs_fpga(int numCols,
                   std::vector<unsigned int> &offset,
                    std::vector<unsigned int> &offset_inds,
                   int start_node,
-                  const int numcu) noexcept(false) {
+                  const int numcu,int numEdges) noexcept(false) {
  
 
   // Select either:
@@ -266,16 +272,16 @@ void run_bfs_fpga(int numCols,
 
 
     // Compute kernel execution time
-    event e1_1,e1_2,e1_3,e_visited_update_0,e_visited_update_1,e1_4;
-    event e_remove_0,e_remove_1,e_remove_2,e_remove_3;
-    double time_kernel=0,time_kernel1=0,time_kernel2=0,time_kernel3=0,time_kernel_levelgen=0,time_kernel_levelgen_1=0,time_kernel_remove=0,time_kernel_remove1=0;
+    event e_explore_1,e_explore_2,e_explore_3,e_levelgen_0,e_levelgen_1,e_explore_4;
+    event e_pipegen,e_maskreset,e_remove_2,e_remove_3;
+    double time_kernel=0,time_kernel1=0,time_kernel2=0,time_kernel3=0,time_kernel_levelgen=0,time_kernel_levelgen_1=0,time_kernel_pipegen=0,time_kernel_maskreset=0;
 
   
 
     int global_level = 1;
 
     
-    for(int ijk=0; ijk < 25; ijk++){
+    for(int ijk=0; ijk < 100; ijk++){
       // std::cout << h_over << " -- \n";
      if(h_over == 0){
       std::cout << "total number of iterations" << ijk << "\n";
@@ -286,23 +292,23 @@ void run_bfs_fpga(int numCols,
       
       // q.memcpy(d_over, &h_over, sizeof(unsigned int)).wait();
 
-    e1_1 = parallel_explorer_kernel<0>(q,h_over,offset[0],offset_inds[0],usm_nodes_start,usm_edges,usm_dist,usm_pipe, usm_updating_mask,usm_visited);
-    e1_2 = parallel_explorer_kernel<1>(q,h_over,offset[1],offset_inds[1],usm_nodes_start,usm_edges,usm_dist,usm_pipe, usm_updating_mask,usm_visited);
-    e1_3 = parallel_explorer_kernel<2>(q,h_over,offset[2],offset_inds[2],usm_nodes_start,usm_edges,usm_dist,usm_pipe, usm_updating_mask,usm_visited);
-    e1_4 = parallel_explorer_kernel<3>(q,h_over,offset[3],offset_inds[3],usm_nodes_start,usm_edges,usm_dist,usm_pipe, usm_updating_mask,usm_visited);
+    e_explore_1 = parallel_explorer_kernel<0>(q,h_over,offset[0],offset_inds[0],usm_nodes_start,usm_edges,usm_dist,usm_pipe, usm_updating_mask,usm_visited);
+    e_explore_2 = parallel_explorer_kernel<1>(q,h_over,offset[1],offset_inds[1],usm_nodes_start,usm_edges,usm_dist,usm_pipe, usm_updating_mask,usm_visited);
+    e_explore_3 = parallel_explorer_kernel<2>(q,h_over,offset[2],offset_inds[2],usm_nodes_start,usm_edges,usm_dist,usm_pipe, usm_updating_mask,usm_visited);
+    e_explore_4 = parallel_explorer_kernel<3>(q,h_over,offset[3],offset_inds[3],usm_nodes_start,usm_edges,usm_dist,usm_pipe, usm_updating_mask,usm_visited);
  
     q.wait();
  
 
-    e_visited_update_0 =parallel_levelgen_kernel<0>(q,0,numCols/2,usm_dist,usm_pipe, d_over,usm_updating_mask,usm_visited,global_level);
-    e_visited_update_1 =parallel_levelgen_kernel<1>(q,numCols/2,numCols,usm_dist,usm_pipe, d_over,usm_updating_mask,usm_visited,global_level);
+    e_levelgen_0 =parallel_levelgen_kernel<0>(q,0,numCols/2,usm_dist,usm_updating_mask,usm_visited,global_level);
+    e_levelgen_1 =parallel_levelgen_kernel<1>(q,numCols/2,numCols,usm_dist,usm_updating_mask,usm_visited,global_level);
 
 
-    e_remove_0 =parallel_pipegen_kernel<8>(q,numCols,usm_pipe, d_over,usm_updating_mask,usm_visited,global_level);
+    e_pipegen =parallel_pipegen_kernel<8>(q,numCols,usm_pipe, d_over,usm_updating_mask);
     q.wait();
 
 
-    e_remove_1 =maskremove_kernel<8>(q,numCols,usm_updating_mask);
+    e_maskreset =maskremove_kernel<8>(q,numCols,usm_updating_mask);
  
 // #############################################################################################              
 
@@ -315,14 +321,14 @@ void run_bfs_fpga(int numCols,
     // h_over++;
  
 
-    time_kernel  += GetExecutionTime(e1_1);
-    time_kernel1 += GetExecutionTime(e1_2);
-    time_kernel2 += GetExecutionTime(e1_3);
-    time_kernel3 += GetExecutionTime(e1_4);
-    time_kernel_levelgen += GetExecutionTime(e_visited_update_0);
-    time_kernel_levelgen_1 += GetExecutionTime(e_visited_update_1);
-time_kernel_remove += GetExecutionTime(e_remove_0);
-time_kernel_remove1 += GetExecutionTime(e_remove_1);
+    time_kernel  += GetExecutionTime(e_explore_1);
+    time_kernel1 += GetExecutionTime(e_explore_2);
+    time_kernel2 += GetExecutionTime(e_explore_3);
+    time_kernel3 += GetExecutionTime(e_explore_4);
+    time_kernel_levelgen += GetExecutionTime(e_levelgen_0);
+    time_kernel_levelgen_1 += GetExecutionTime(e_levelgen_1);
+time_kernel_pipegen += GetExecutionTime(e_pipegen);
+time_kernel_maskreset += GetExecutionTime(e_maskreset);
     global_level++;
 
     }
@@ -350,23 +356,27 @@ time_kernel_remove1 += GetExecutionTime(e_remove_1);
 
       printf(
          "|-------------------------+-------------------------|\n"
-         "| Number of Vertices = %d | N = %d M            |\n"
+         "| # Vertices = %d   | # Edges = %d        |\n"
          "|-------------------------+-------------------------|\n"
          "| Kernel                  |    Wall-Clock Time (ns) |\n"
-         "|-------------------------+-------------------------|\n",numCols,123456);
+         "|-------------------------+-------------------------|\n",numCols,numEdges);
 
-  double fpga_execution_time = (max(max(time_kernel,time_kernel1),max(time_kernel2,time_kernel3)) + time_kernel_levelgen );
+  double fpga_execution_time = (max(max(time_kernel,time_kernel1),max(time_kernel2,time_kernel3)) + max(time_kernel_pipegen,max(time_kernel_levelgen,time_kernel_levelgen_1)) +  time_kernel_maskreset);
 
-  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " Time elapsed e1_1  : ";
-  std::cout << "| " << std::setw(numWidth) << std::setfill(separator)  << std::to_string(time_kernel) + " (s) " << "| " << std::endl;
-  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " Time elapsed e1_2  : " << "| " << time_kernel1 << " (s) " << "| " << std::endl;
-  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " Time elapsed e1_3  : " << "| " << time_kernel2 << " (s) " << "| " << std::endl;
-  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " Time elapsed e1_4  : " << "| " << time_kernel3 << " (s) " << "| " << std::endl;
-  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " e_remove  : " << "| " << time_kernel_remove << " (s) " << "| " << std::endl;
-  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " e_remove1  : " << "| " << time_kernel_remove1 << " (s) " << "| " << std::endl;
-  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " LevelGen  : "          << "| " << time_kernel_levelgen << " (s) "<< "| "  << std::endl;
-  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " Total Time Elapsed  :" << "| " << fpga_execution_time << " (s) "<< "| "  << std::endl;
-  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " Throughput = "         << "| " <<(16.77/fpga_execution_time) << "| " << "\n";
+  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " Explore_1  : " << "| " << std::setw(numWidth) << std::setfill(separator)  << std::to_string(time_kernel) + " (s) " << "| " << std::endl;
+  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " Explore_2  : " << "| " << std::setw(numWidth) << std::setfill(separator)  << std::to_string(time_kernel1) + " (s) " << "| " << std::endl;
+  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " Explore_3  : " << "| " << std::setw(numWidth) << std::setfill(separator)  << std::to_string(time_kernel2) + " (s) " << "| " << std::endl;
+  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " Explore_4  : " << "| " << std::setw(numWidth) << std::setfill(separator)  << std::to_string(time_kernel3) + " (s) " << "| " << std::endl;
+  printf("|-------------------------+-------------------------|\n");
+  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " PipeGen    : " << "| " << std::setw(numWidth) << std::setfill(separator)  << std::to_string(time_kernel_pipegen) + " (s) " << "| " << std::endl;
+  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " LevelGen   : " << "| " << std::setw(numWidth) << std::setfill(separator)  << std::to_string(time_kernel_levelgen) + " (s) "<< "| "  << std::endl;
+  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " LevelGen_1 : " << "| " << std::setw(numWidth) << std::setfill(separator)  << std::to_string(time_kernel_levelgen_1) + " (s) "<< "| "  << std::endl;
+  printf("|-------------------------+-------------------------|\n");
+  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " MaskReset  : " << "| " << std::setw(numWidth) << std::setfill(separator)  << std::to_string(time_kernel_maskreset) + " (s) " << "| " << std::endl;
+  printf("|-------------------------+-------------------------|\n");
+  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " Total Time Elapsed  :" << "| " << std::setw(numWidth) << std::setfill(separator)  << std::to_string(fpga_execution_time) + " (s) "<< "| "  << std::endl;
+  std::cout << "| " << std::left << std::setw(nameWidth) << std::setfill(separator) << " Throughput = "         << "| " << std::setw(numWidth) << std::setfill(separator)  << std::to_string((numEdges/(1000000*fpga_execution_time))) + " (MTEPS)" << "| " << std::endl;;
+  printf("|-------------------------+-------------------------|\n");
 
 
     // The queue destructor is invoked when q passes out of scope.
