@@ -16,8 +16,8 @@ python genGraph.py rmat 24 16
 ```
 If you have datasets ready as text file, convert graph text files to the bin files : 
 ```bash
-python generator.py (dataset name) (partition)
-python generator.py wiki-Talk 1
+python generator.py (dataset name) (partition) (nnz/row)
+python generator.py wiki-Talk 1 nnz
 ```
 
 ## Build for Hardware Execution
