@@ -1,5 +1,5 @@
 # bfs-sycl-fpga
-This work has been submitted to Ninth International Workshop on Heterogeneous High-performance Reconfigurable Computing (H2RC'23) 
+This work has been submitted to 12th International Workshop on OpenCL and SYCL (IWOCL24)
 
 The Breadth-First Search algorithm implementation using Intel oneAPI (SYCL2020) on Intel Arria10 and Stratix10 FPGAs
 
@@ -22,10 +22,13 @@ python generator.py wiki-Talk 1
 
 ## Build for Hardware Execution
 ```bash
-cd bfs_*cu
+cd *BFS
 mkdir build
 cd build
-cmake .. -DFPGA_DEVICE=$AOCL_BOARD_PACKAGE_ROOT:$FPGA_BOARD_NAME 
+# for memoryBFS:
+cmake .. -DFPGA_DEVICE=$AOCL_BOARD_PACKAGE_ROOT:$FPGA_BOARD_NAME -DNUM_COMPUTE_UNITS=4 
+# for streamingBFS
+cmake .. -DFPGA_DEVICE=$AOCL_BOARD_PACKAGE_ROOT:$FPGA_BOARD_NAME -DNUM_COMPUTE_UNITS=4 -DK_MEMORY_CACHE=131072
 make fpga
 ```
 
@@ -34,14 +37,17 @@ make fpga
 cd bfs_*cu
 mkdir build
 cd build
-cmake .. -DFPGA_DEVICE=$AOCL_BOARD_PACKAGE_ROOT:$FPGA_BOARD_NAME 
+# for memoryBFS:
+cmake .. -DFPGA_DEVICE=$AOCL_BOARD_PACKAGE_ROOT:$FPGA_BOARD_NAME -DNUM_COMPUTE_UNITS=4 
+# for streamingBFS
+cmake .. -DFPGA_DEVICE=$AOCL_BOARD_PACKAGE_ROOT:$FPGA_BOARD_NAME -DNUM_COMPUTE_UNITS=4 -DK_MEMORY_CACHE=131072
 make fpga_emu
 ```
 
 ## AOCL Profiler
 ```bash
 cd bfs_*cu
-aocl profile -output-dir /path/to/bfs_*cu/aocl/ .bfs_*cu/build/bfs.fpga (GraphName)  (Partition) (RootNode)
+aocl profile -output-dir /path/to/bfs_*cu/aocl/ ./build/bfs.fpga (GraphName)  (Partition) (RootNode)
 ```
 
 ## Optimisations
@@ -50,7 +56,8 @@ aocl profile -output-dir /path/to/bfs_*cu/aocl/ .bfs_*cu/build/bfs.fpga (GraphNa
 ## Acknowledgements
 * [University of Paderborn Noctua 2](https://pc2.uni-paderborn.de/hpc-services/available-systems/noctua2)
 * [Intel DevCloud for OneAPI](https://devcloud.intel.com/oneapi/)
-* [[/docs/images/bristol-alumni-and-friends.png]]
+<img src="/docs/images/bristol-alumni-and-friends.png" alt="drawing" width="200" />
+
 ## License
 This work is licensed under a
 [Creative Commons Attribution 4.0 International License][cc-by].
