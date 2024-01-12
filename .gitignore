@@ -1,0 +1,9 @@
+aocl/
+backup/
+slurm-logs/
+*.sh
+*BFS/build*
+*BFS/emu*
+dataset/
+txt/
+txt2/
