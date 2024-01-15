@@ -46,8 +46,8 @@ make fpga_emu
 
 ## AOCL Profiler
 ```bash
-cd bfs_*cu
-aocl profile -output-dir /path/to/bfs_*cu/aocl/ ./build/bfs.fpga (GraphName)  (Partition) (RootNode)
+cd memoryBFS
+aocl profile -output-dir /path/to/memoryBFS/aocl/ ./build/bfs.fpga (GraphName)  (Partition) (RootNode)
 ```
 
 ## Optimisations
