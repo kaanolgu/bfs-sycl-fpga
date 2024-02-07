@@ -1,5 +1,5 @@
 # bfs-sycl-fpga
-This work has been submitted to 12th International Workshop on OpenCL and SYCL (IWOCL24)
+This work has been ~submitted~ [accepted](https://www.iwocl.org/iwocl-2024/program/#conf-wed) to 12th International Workshop on OpenCL and SYCL (IWOCL24)
 
 The Breadth-First Search algorithm implementation using Intel oneAPI (SYCL2020) on Intel Arria10 and Stratix10 FPGAs
 
