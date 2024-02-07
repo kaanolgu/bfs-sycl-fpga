@@ -1,8 +1,11 @@
 # bfs-sycl-fpga
 This work has been ~submitted~ [accepted](https://www.iwocl.org/iwocl-2024/program/#conf-wed) to 12th International Workshop on OpenCL and SYCL (IWOCL24)
 
-The Breadth-First Search algorithm implementation using Intel oneAPI (SYCL2020) on Intel Arria10 and Stratix10 FPGAs
+The Breadth-First Search implementations _memoryBFS_ and _streamingBFS_ using Intel oneAPI (SYCL2020) on Intel FPGAs
+* **_memoryBFS_:** We applied the typical optimisations proposed in the official guidelines alongside an automatic cache to achieve proper pipelining and improve random memory accesses performance. However, limitations occurred with fine-grained parallelism, and it was competitive only to some related work that utilised hardware-description languages or established high-level synthesis tools.
+* **_streamingBFS_:** We added bit-level representations of data in memory, banking in on-chip memory, and fine-grained control over parallel data streams to achieve higher throughput.
 
+Authors : [Kaan Olgu](https://research-information.bris.ac.uk/en/persons/kaan-olgu-2) & [Tobias Kenter](https://www.uni-paderborn.de/en/person/3145)
 ## Producing and Converting Datasets
 Tested with Python 3.9.6
 ```bash
@@ -52,6 +55,7 @@ aocl profile -output-dir /path/to/memoryBFS/aocl/ ./build/bfs.fpga (GraphName)  
 
 ## Optimisations
 [Optimisations Wiki Page](https://github.com/kaanolgu/bfs-sycl-fpga/wiki/Optimisation-Guide)
+
 
 ## Acknowledgements
 * [University of Paderborn Noctua 2](https://pc2.uni-paderborn.de/hpc-services/available-systems/noctua2)
