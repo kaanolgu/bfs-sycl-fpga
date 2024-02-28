@@ -6,6 +6,8 @@ The Breadth-First Search implementations _memoryBFS_ and _streamingBFS_ using In
 * **_streamingBFS_:** We added bit-level representations of data in memory, banking in on-chip memory, and fine-grained control over parallel data streams to achieve higher throughput.
 
 Authors : [Kaan Olgu](https://research-information.bris.ac.uk/en/persons/kaan-olgu-2) & [Tobias Kenter](https://www.uni-paderborn.de/en/person/3145)
+
+
 ## Producing and Converting Datasets
 Tested with Python 3.9.6
 ```bash
@@ -60,5 +62,8 @@ aocl profile -output-dir /path/to/memoryBFS/aocl/ ./build/bfs.fpga (GraphName)  
 ## Acknowledgements
 * [University of Paderborn Noctua 2](https://pc2.uni-paderborn.de/hpc-services/available-systems/noctua2)
 * [Intel DevCloud for OneAPI](https://devcloud.intel.com/oneapi/)
-<img src="/docs/images/bristol-alumni-and-friends.png" alt="drawing" width="200" />
 
+
+## Citing
+Please cite our work via this reference:
+> Kaan Olgu, Tobias Kenter, Jose Nunez-Yanez, and Simon McIntosh-Smith. 2024. Optimisation and Evaluation of Breadth First Search with oneAPI/SYCL on Intel FPGAs: from Describing Algorithms to Describing Architectures. In International Workshop on OpenCL and SYCL (IWOCL ’24), April 8–11, 2024, Chicago, IL, USA. ACM, New York, NY, USA, 11 pages. https://doi.org/10.1145/3648115.3648134
