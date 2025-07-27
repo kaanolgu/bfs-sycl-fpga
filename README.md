@@ -1,6 +1,9 @@
 # bfs-sycl-fpga
 This work has been ~submitted~ [accepted](https://www.iwocl.org/iwocl-2024/program/#conf-wed) to 12th International Workshop on OpenCL and SYCL (IWOCL24)
 
+Publication Link : https://dl.acm.org/doi/abs/10.1145/3648115.3648134 
+
+
 The Breadth-First Search implementations _memoryBFS_ and _streamingBFS_ using Intel oneAPI (SYCL2020) on Intel FPGAs
 * **_memoryBFS_:** We applied the typical optimisations proposed in the official guidelines alongside an automatic cache to achieve proper pipelining and improve random memory accesses performance. However, limitations occurred with fine-grained parallelism, and it was competitive only to some related work that utilised hardware-description languages or established high-level synthesis tools.
 * **_streamingBFS_:** We added bit-level representations of data in memory, banking in on-chip memory, and fine-grained control over parallel data streams to achieve higher throughput.
